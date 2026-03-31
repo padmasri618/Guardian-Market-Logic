@@ -12,26 +12,45 @@ import csv
 import random
 from datetime import datetime
 
-# --- 1. CONFIGURATION ---
+# --- 1. CONFIGURATION (THE FINAL FIX) ---
+import streamlit as st
+import os
+import joblib
+import base64
+
 st.set_page_config(page_title="Guardian Market Logic", layout="wide")
 
-BASE_PATH = r"C:\Guardian_Market_Logic"
+# This line finds the EXACT folder where your script is currently running
+# It works on Windows AND on the Streamlit Cloud server
+BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 DATA_FOLDER = os.path.join(BASE_PATH, "data")
-if not os.path.exists(DATA_FOLDER): os.makedirs(DATA_FOLDER)
 
-# Asset Paths
-LOGIN_BG = r"C:\Guardian_Market_Logic\data\2.jpg"
+# Create data folder if it doesn't exist
+if not os.path.exists(DATA_FOLDER): 
+    os.makedirs(DATA_FOLDER)
+
+# --- DEFINE PATHS (No more C:\Users\padma...) ---
+LOGIN_BG = os.path.join(DATA_FOLDER, "2.jpg")
 MAIN_BG = os.path.join(DATA_FOLDER, "2.jpg")
-
 USER_DB = os.path.join(DATA_FOLDER, "users.csv")
 ACTIVITY_DB = os.path.join(DATA_FOLDER, "user_activity.csv")
-SUPPORT_DB = os.path.join(DATA_FOLDER, "support_tickets.csv") 
-PORTFOLIO_DB = os.path.join(DATA_FOLDER, "portfolio.csv") 
+SUPPORT_DB = os.path.join(DATA_FOLDER, "support_tickets.csv")
+PORTFOLIO_DB = os.path.join(DATA_FOLDER, "portfolio.csv")
 WATCHLIST_DB = os.path.join(DATA_FOLDER, "watchlist.csv")
 
 RF_PATH = os.path.join(DATA_FOLDER, "rf_model.pkl")
 XGB_PATH = os.path.join(DATA_FOLDER, "xgboost_model.pkl")
 SCALER_PATH = os.path.join(DATA_FOLDER, "scaler.pkl")
+
+# --- MODEL LOADING LOGIC ---
+try:
+    # This will now look for /data/scaler.pkl relative to the script
+    scaler = joblib.load(SCALER_PATH)
+    rf_model = joblib.load(RF_PATH)
+    xgb_model = joblib.load(XGB_PATH)
+except Exception as e:
+    st.error(f"Error: Could not find models in {DATA_FOLDER}. Please ensure files are in the 'data' folder on GitHub.")
+    scaler, rf_model, xgb_model = None, None, None
 
 NIFTY_50 = {
     "Reliance": "RELIANCE.NS", "TCS": "TCS.NS", "HDFC Bank": "HDFCBANK.NS", "ICICI Bank": "ICICIBANK.NS",

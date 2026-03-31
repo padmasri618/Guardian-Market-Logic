@@ -347,51 +347,51 @@ else:
 
         if st.button("EXECUTE SYSTEM AUDIT", use_container_width=True):
             if scaler is None or rf_model is None or xgb_model is None:
-                st.error("❌ System Error: AI Models are not loaded. Check the 'Load Error' at the top of the page.")
+                st.error("❌ System Error: AI Models are not loaded. Please check the Load Error at the top of the page.")
             else:
                 try:
                     with st.spinner("Analyzing Market Sentinel..."):
-                    ticker_obj = yf.Ticker(asset_ticker) if mode == "Live Market" else None
-                    df_raw = ticker_obj.history(period="5d", interval="1m") if mode == "Live Market" else pd.read_csv(asset_ticker)
-                    info = ticker_obj.info if mode == "Live Market" else {}
-                    df_p = calculate_indicators(df_raw)
-                    
-                    # 1. Prepare Features
-                    features = ['ema_9','ema_21','rsi','macd','macd_signal','bb_high','bb_low','atr','vwap','oc_diff','hl_diff','volume_change','distance_ema','trend_strength','hour']
-                    scaled = scaler.transform(df_p[features].tail(1))
-                    
-                    # 2. CALCULATE ACTION FIRST (This defines 'prob' and 'action')
-                    prob = (rf.predict_proba(scaled)[0][1] + xgb.predict_proba(scaled)[0][1]) / 2
-                    action = "BUY" if prob > 0.6 else "SELL" if prob < 0.4 else "HOLD"
+                        ticker_obj = yf.Ticker(asset_ticker) if mode == "Live Market" else None
+                        df_raw = ticker_obj.history(period="5d", interval="1m") if mode == "Live Market" else pd.read_csv(asset_ticker)
+                        info = ticker_obj.info if mode == "Live Market" else {}
+                        df_p = calculate_indicators(df_raw)
+                        
+                        # 1. Prepare Features
+                        features = ['ema_9','ema_21','rsi','macd','macd_signal','bb_high','bb_low','atr','vwap','oc_diff','hl_diff','volume_change','distance_ema','trend_strength','hour']
+                        scaled = scaler.transform(df_p[features].tail(1))
+                        
+                        # 2. CALCULATE ACTION
+                        prob = (rf_model.predict_proba(scaled)[0][1] + xgb_model.predict_proba(scaled)[0][1]) / 2
+                        action = "BUY" if prob > 0.6 else "SELL" if prob < 0.4 else "HOLD"
 
-                    # 3. NOW LOG THE TRADE (Now 'action' and 'prob' exist!)
-                    log_trade(
-                        st.session_state.user, 
-                        asset_label, 
-                        target_strategy, 
-                        action, 
-                        df_p['close'].iloc[-1], 
-                        prob, 
-                        risk_level
-                    )
+                        # 3. LOG THE TRADE
+                        log_trade(
+                            st.session_state.user, 
+                            asset_label, 
+                            target_strategy, 
+                            action, 
+                            df_p['close'].iloc[-1], 
+                            prob, 
+                            risk_level
+                        )
 
-                    # 4. Save results to session state and move to Dashboard
-                    st.session_state.result = {
-                        "action": action, 
-                        "prob": prob, 
-                        "price": df_p['close'].iloc[-1], 
-                        "sl": df_p['close'].iloc[-1] * 0.98, 
-                        "target": df_p['close'].iloc[-1] * 1.05, 
-                        "history": df_p.tail(100), 
-                        "stock": asset_label, 
-                        "info": info, 
-                        "ticker": asset_ticker, 
-                        "mode": mode
-                    }
-                    st.session_state.page = "Dashboard"
-                    st.rerun()
-            except Exception as e: 
-                st.error(f"Audit Error: {e}")
+                        # 4. Save results to session state
+                        st.session_state.result = {
+                            "action": action, 
+                            "prob": prob, 
+                            "price": df_p['close'].iloc[-1], 
+                            "sl": df_p['close'].iloc[-1] * 0.98, 
+                            "target": df_p['close'].iloc[-1] * 1.05, 
+                            "history": df_p.tail(100), 
+                            "stock": asset_label, 
+                            "info": info, 
+                            "ticker": asset_ticker, 
+                            "mode": mode
+                        }
+                        st.session_state.page = "Dashboard"
+                        st.rerun()
+                except Exception as e: 
+                    st.error(f"Audit Error: {e}")
 
     elif st.session_state.page == "Dashboard":
         

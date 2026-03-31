@@ -346,8 +346,11 @@ else:
             news_ticker(asset_label if mode == "Live Market" else None)
 
         if st.button("EXECUTE SYSTEM AUDIT", use_container_width=True):
-            try:
-                with st.spinner("Analyzing Market Sentinel..."):
+            if scaler is None or rf_model is None or xgb_model is None:
+                st.error("❌ System Error: AI Models are not loaded. Check the 'Load Error' at the top of the page.")
+            else:
+                try:
+                    with st.spinner("Analyzing Market Sentinel..."):
                     ticker_obj = yf.Ticker(asset_ticker) if mode == "Live Market" else None
                     df_raw = ticker_obj.history(period="5d", interval="1m") if mode == "Live Market" else pd.read_csv(asset_ticker)
                     info = ticker_obj.info if mode == "Live Market" else {}

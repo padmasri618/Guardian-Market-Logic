@@ -12,24 +12,18 @@ import csv
 import random
 from datetime import datetime
 
-# --- 1. CONFIGURATION (THE FINAL FIX) ---
-import streamlit as st
-import os
-import joblib
-import base64
-
+# --- 1. CONFIGURATION (CLEANED & WEB-READY) ---
 st.set_page_config(page_title="Guardian Market Logic", layout="wide")
 
-# This line finds the EXACT folder where your script is currently running
-# It works on Windows AND on the Streamlit Cloud server
+# This dynamically finds the folder whether on your PC or GitHub
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 DATA_FOLDER = os.path.join(BASE_PATH, "data")
 
-# Create data folder if it doesn't exist
-if not os.path.exists(DATA_FOLDER): 
+# Create data folder if missing
+if not os.path.exists(DATA_FOLDER):
     os.makedirs(DATA_FOLDER)
 
-# --- DEFINE PATHS (No more C:\Users\padma...) ---
+# Define Paths using the dynamic DATA_FOLDER
 LOGIN_BG = os.path.join(DATA_FOLDER, "2.jpg")
 MAIN_BG = os.path.join(DATA_FOLDER, "2.jpg")
 USER_DB = os.path.join(DATA_FOLDER, "users.csv")
@@ -44,13 +38,22 @@ SCALER_PATH = os.path.join(DATA_FOLDER, "scaler.pkl")
 
 # --- MODEL LOADING LOGIC ---
 try:
-    # This will now look for /data/scaler.pkl relative to the script
-    scaler = joblib.load(SCALER_PATH)
-    rf_model = joblib.load(RF_PATH)
-    xgb_model = joblib.load(XGB_PATH)
+    # Check if files exist before loading to give a clear error
+    if os.path.exists(SCALER_PATH):
+        scaler = joblib.load(SCALER_PATH)
+        rf_model = joblib.load(RF_PATH)
+        xgb_model = joblib.load(XGB_PATH)
+    else:
+        st.error(f"⚠️ Critical Error: Models not found in {DATA_FOLDER}. Check your GitHub 'data' folder.")
+        scaler, rf_model, xgb_model = None, None, None
 except Exception as e:
-    st.error(f"Error: Could not find models in {DATA_FOLDER}. Please ensure files are in the 'data' folder on GitHub.")
+    st.error(f"Load Error: {e}")
     scaler, rf_model, xgb_model = None, None, None
+
+# --- ASSET LOADING HELPERS ---
+@st.cache_resource
+def load_assets():
+    return rf_model, xgb_model, scaler
 
 NIFTY_50 = {
     "Reliance": "RELIANCE.NS", "TCS": "TCS.NS", "HDFC Bank": "HDFCBANK.NS", "ICICI Bank": "ICICIBANK.NS",

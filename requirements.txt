@@ -10,3 +10,4 @@ beautifulsoup4
 requests
 lxml
 xgboost
+.python-version==3.11.8
